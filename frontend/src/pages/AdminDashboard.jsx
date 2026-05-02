@@ -46,6 +46,12 @@ const courseEngagementData = [
   { name: 'W4', hours: 580 },
 ];
 
+const roleDistributionData = [
+  { name: 'Students', value: 204 },
+  { name: 'Teachers', value: 45 },
+  { name: 'Admins', value: 7 },
+];
+
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload?.length) {
     return (
@@ -287,38 +293,34 @@ export default function AdminDashboard() {
             {/* User Growth */}
             <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-emerald-500" /> Platform User Growth
+                <Activity className="w-4 h-4 text-emerald-500" /> Platform Usage & Growth
               </h3>
               <ResponsiveContainer width="100%" height={180}>
-                <AreaChart data={userGrowthData} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
+                <BarChart data={userGrowthData} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="users" stroke="#10b981" fillOpacity={1} fill="url(#colorUsers)" />
-                </AreaChart>
+                  <Bar dataKey="users" name="Active Users" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Course Engagement */}
+            {/* User Role Distribution */}
             <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-blue-500" /> Course Engagement (Hours)
+                <Users className="w-4 h-4 text-blue-500" /> User Role Distribution
               </h3>
               <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={courseEngagementData} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line type="monotone" dataKey="hours" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
-                </LineChart>
+                <PieChart>
+                  <Pie data={roleDistributionData} cx="50%" cy="50%" outerRadius={65} innerRadius={40} dataKey="value" label={false} paddingAngle={5}>
+                    {roleDistributionData.map((_, i) => (
+                      <Cell key={i} fill={['#3b82f6', '#8b5cf6', '#f59e0b'][i]} />
+                    ))}
+                  </Pie>
+                  <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                  <Tooltip contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff'}} />
+                </PieChart>
               </ResponsiveContainer>
             </div>
           </div>

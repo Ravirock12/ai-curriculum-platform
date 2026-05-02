@@ -16,6 +16,7 @@ import seedDatabase from './seed.js';
 import authRoutes from './routes/authRoutes.js';
 import curriculumRoutes from './routes/curriculumRoutes.js';
 import quizRoutes from './routes/quizRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 
 // Safe ENV check — confirms variable is loaded WITHOUT leaking the URI value
 console.log('ENV loaded:', !!process.env.MONGO_URI);
@@ -65,6 +66,7 @@ io.on('connection', (socket) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/curriculum', curriculumRoutes);
 app.use('/api/quiz', quizRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check — used by Render and monitoring tools
 app.get('/api/health', (req, res) => {

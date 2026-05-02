@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Clock, TrendingUp, Award, BookOpen, Activity, AlertTriangle, Zap, AlertCircle, ArrowDown, ShieldCheck, RefreshCw } from 'lucide-react';
+import { CheckCircle, Clock, TrendingUp, Award, BookOpen, Activity, AlertTriangle, Zap, AlertCircle, ArrowDown, ShieldCheck, RefreshCw, Sparkles, PlayCircle, Brain, Target, Briefcase, Cpu } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { motion } from 'framer-motion';
 import api from '../services/api';
@@ -32,6 +32,7 @@ export default function StudentDashboard() {
   const [stats, setStats] = useState({ completed: 0, inProgress: 0, recommended: 0, skillScore: 0, xp: 0, badges: [], strongSkills: [], weakSkills: [] });
   const [curriculum, setCurriculum] = useState([]);
   const [analytics, setAnalytics] = useState(null);
+  const [aiInsights, setAiInsights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAiSortingEnabled, setIsAiSortingEnabled] = useState(true);
   const [explanationModal, setExplanationModal] = useState({ isOpen: false, topic: null });
@@ -43,12 +44,14 @@ export default function StudentDashboard() {
       try {
         setError(null);
         // Fetch subjects, analytics and schedule
-        const [subjectsRes, analyticsRes, scheduleRes] = await Promise.all([
+        const [subjectsRes, analyticsRes, scheduleRes, aiRes] = await Promise.all([
           api.get('/curriculum/subjects'),
           api.get('/quiz/analytics/student').catch(() => ({ data: null })),
           api.get('/quiz/schedule').catch(() => ({ data: null })),
+          api.get('/ai/recommendation').catch(() => ({ data: null }))
         ]);
         if (scheduleRes.data) setSchedule(scheduleRes.data);
+        if (aiRes.data) setAiInsights(aiRes.data);
 
         const curriculumData = Array.isArray(subjectsRes.data) ? subjectsRes.data : [];
         const analyticsData = analyticsRes.data;
@@ -145,7 +148,7 @@ export default function StudentDashboard() {
         <div className="h-10 w-72 skeleton" />
         <div className="h-4 w-48 skeleton" />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-28 skeleton" />)}
+          {[1, 2, 3, 4].map(i => <div key={i} className="h-28 skeleton" />)}
         </div>
         <div className="h-40 skeleton" />
         <div className="h-72 skeleton" />
@@ -159,30 +162,63 @@ export default function StudentDashboard() {
       transition={{ duration: 0.4 }}
       className="space-y-8 pb-10"
     >
+      {/* ── Student Profile Card ── */}
       <motion.div
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="card-premium overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl"
       >
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">
-          Welcome back, <span className="gradient-text">{userInfo.name ? userInfo.name.split(' ')[0] : 'Student'}</span>! 👋
-        </h1>
-        <div className="mt-2 flex items-center gap-2.5 flex-wrap">
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Here is your personalized learning dashboard.</p>
-          {userInfo.branch && (
-            <span className="px-2.5 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 font-bold text-xs rounded-lg border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
-              <BookOpen className="w-3 h-3" /> {userInfo.branch}
-            </span>
-          )}
-          {schedule.streak > 0 && (
-            <span className="px-2.5 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 font-bold text-xs rounded-lg border border-orange-200 dark:border-orange-700 flex items-center gap-1">
-              🔥 {schedule.streak}-day streak
-            </span>
-          )}
-          {schedule.level > 0 && (
-            <span className="px-2.5 py-1 bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300 font-bold text-xs rounded-lg border border-violet-200 dark:border-violet-700 flex items-center gap-1">
-              ⚡ Level {schedule.level}
-            </span>
-          )}
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-800 p-8 text-white relative overflow-hidden">
+          {/* Decorative circles */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-400 opacity-10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4" />
+
+          <div className="relative z-10 flex flex-col md:flex-row items-center md:items-end justify-between gap-6">
+            <div className="flex items-center gap-6 w-full md:w-auto">
+              {/* Avatar placeholder */}
+              <div className="w-24 h-24 rounded-full bg-white/20 border-4 border-white/30 backdrop-blur-sm flex items-center justify-center text-4xl shadow-xl shrink-0">
+                👨‍🎓
+              </div>
+              <div className="flex-1">
+                <h1 className="text-3xl font-extrabold tracking-tight">
+                  Welcome back, {userInfo.name ? userInfo.name.split(' ')[0] : 'Student'}! 👋
+                </h1>
+                <div className="mt-3 flex items-center gap-3 flex-wrap">
+                  {userInfo.branch && (
+                    <span className="px-3 py-1 bg-white/20 backdrop-blur-md text-white font-bold text-xs rounded-lg border border-white/30 flex items-center gap-1.5 shadow-sm">
+                      <BookOpen className="w-3.5 h-3.5" /> {userInfo.branch}
+                    </span>
+                  )}
+                  {schedule.streak > 0 && (
+                    <span className="px-3 py-1 bg-orange-500/80 backdrop-blur-md text-white font-bold text-xs rounded-lg border border-orange-400/50 flex items-center gap-1.5 shadow-sm">
+                      🔥 {schedule.streak} Day Streak
+                    </span>
+                  )}
+                  <span className="px-3 py-1 bg-indigo-500/80 backdrop-blur-md text-white font-bold text-xs rounded-lg border border-indigo-400/50 flex items-center gap-1.5 shadow-sm">
+                    ⚡ Level {Math.max(1, Math.floor(xp / 100))}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Stats right aligned */}
+            <div className="flex items-center gap-8 bg-black/20 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/10 w-full md:w-auto shrink-0 justify-around">
+              <div className="text-center">
+                <p className="text-white/70 text-[10px] font-bold uppercase tracking-wider mb-1">Progress</p>
+                <p className="text-2xl font-extrabold text-emerald-400">{completed > 0 ? Math.min(100, Math.round((completed / (completed + inProgress || 1)) * 100)) : 0}%</p>
+              </div>
+              <div className="w-px h-10 bg-white/10" />
+              <div className="text-center">
+                <p className="text-white/70 text-[10px] font-bold uppercase tracking-wider mb-1">Skill Score</p>
+                <p className="text-2xl font-extrabold text-yellow-400">{skillScore}</p>
+              </div>
+              <div className="w-px h-10 bg-white/10" />
+              <div className="text-center">
+                <p className="text-white/70 text-[10px] font-bold uppercase tracking-wider mb-1">Completed</p>
+                <p className="text-2xl font-extrabold text-blue-300">{completed}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </motion.div>
 
@@ -190,23 +226,23 @@ export default function StudentDashboard() {
       <div className="opacity-0 animate-fade-in-up bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg" style={{ animationDelay: '0.12s' }}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <p className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-1">⚡ AI Recommendation</p>
+            <p className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-yellow-300" /> AI Recommendation</p>
             {weakSkills.length > 0 ? (
               <>
-                <h2 className="text-xl font-extrabold">Focus on <span className="text-yellow-300">{weakSkills[0]}</span> for the next 2 days</h2>
-                <p className="text-violet-200 text-sm mt-1">You are weak in: <span className="font-semibold text-white">{weakSkills.slice(0, 3).join(', ')}</span>. Your roadmap has been updated.</p>
+                <h2 className="text-xl font-extrabold mt-2">Next up: Master <span className="text-yellow-300">{weakSkills[0]}</span></h2>
+                <p className="text-violet-200 text-sm mt-1 max-w-2xl">We noticed you struggled with {weakSkills[0]} recently. Based on your skill profile, reviewing this topic will improve your overall score by 15%.</p>
               </>
             ) : (
               <>
-                <h2 className="text-xl font-extrabold">You're on track! Keep the momentum going. 🚀</h2>
-                <p className="text-violet-200 text-sm mt-1">No weak areas detected. Take a quiz to keep your streak alive.</p>
+                <h2 className="text-xl font-extrabold mt-2">Next course: <span className="text-yellow-300">{getDisplayedCurriculum()[0]?.title || 'Advanced Fundamentals'}</span></h2>
+                <p className="text-violet-200 text-sm mt-1 max-w-2xl">You're doing great! Keep the momentum going by jumping into your next scheduled topic.</p>
               </>
             )}
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             {getDisplayedCurriculum()[0] && (
-              <button onClick={() => navigate(`/quiz/${getDisplayedCurriculum()[0]._id}`)} className="px-4 py-2 bg-white text-indigo-700 font-bold text-sm rounded-xl hover:bg-indigo-50 active:scale-95 transition-all flex items-center gap-1 shadow">
-                <Zap className="w-4 h-4" /> Take Quiz
+              <button onClick={() => navigate(`/course/${getDisplayedCurriculum()[0]._id}`)} className="px-5 py-2.5 bg-white text-indigo-700 font-extrabold text-sm rounded-xl hover:bg-indigo-50 active:scale-95 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl shadow-black/20">
+                <PlayCircle className="w-5 h-5" /> Start Learning
               </button>
             )}
             <button onClick={() => navigate('/curriculum')} className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-bold text-sm rounded-xl active:scale-95 transition-all backdrop-blur-sm">
@@ -249,7 +285,7 @@ export default function StudentDashboard() {
               <div className="mt-4 flex flex-wrap gap-2">
                 {(Array.isArray(badges) ? badges : []).map((badge, i) => (
                   <span key={i} className="inline-flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm">
-                    <Award className="w-3 h-3 text-yellow-300"/> {badge}
+                    <Award className="w-3 h-3 text-yellow-300" /> {badge}
                   </span>
                 ))}
                 {(Array.isArray(badges) ? badges : []).length === 0 && <span className="text-xs text-indigo-200 italic">No badges earned yet</span>}
@@ -316,7 +352,7 @@ export default function StudentDashboard() {
             </h2>
             <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400 px-2 uppercase tracking-wider">AI Sorting</span>
-              <button 
+              <button
                 onClick={() => setIsAiSortingEnabled(!isAiSortingEnabled)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isAiSortingEnabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
               >
@@ -335,23 +371,21 @@ export default function StudentDashboard() {
               return (
                 <div key={topic._id} className={`flex gap-4 p-4 rounded-xl transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700 hover:shadow-sm ${cardBorder}`}>
                   <div className="flex flex-col items-center">
-                    <span className={`h-5 w-5 rounded-full shrink-0 border-4 shadow-sm ${
-                      isStrong ? 'bg-emerald-500 border-emerald-100 dark:border-slate-800' :
-                      isWeak   ? 'bg-rose-500 border-rose-100 dark:border-slate-800 animate-pulse' :
-                                 'bg-slate-300 dark:bg-slate-600 border-white dark:border-slate-800'
-                    }`} />
+                    <span className={`h-5 w-5 rounded-full shrink-0 border-4 shadow-sm ${isStrong ? 'bg-emerald-500 border-emerald-100 dark:border-slate-800' :
+                        isWeak ? 'bg-rose-500 border-rose-100 dark:border-slate-800 animate-pulse' :
+                          'bg-slate-300 dark:bg-slate-600 border-white dark:border-slate-800'
+                      }`} />
                     {!isLast && <div className="w-0.5 flex-1 bg-slate-200 dark:bg-slate-700 my-1" />}
                   </div>
                   <div className="flex-1 flex justify-between items-center gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-base font-bold ${
-                          isStrong ? 'text-emerald-700 dark:text-emerald-400' :
-                          isWeak   ? 'text-rose-700 dark:text-rose-400' :
-                                     'text-slate-600 dark:text-slate-400'
-                        }`}>{topic.title}</p>
+                        <p className={`text-base font-bold ${isStrong ? 'text-emerald-700 dark:text-emerald-400' :
+                            isWeak ? 'text-rose-700 dark:text-rose-400' :
+                              'text-slate-600 dark:text-slate-400'
+                          }`}>{topic.title}</p>
                         {isStrong && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">✅ Strong Area</span>}
-                        {isWeak   && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 status-dot-pulse">⚠ Needs Improvement</span>}
+                        {isWeak && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 status-dot-pulse">⚠ Needs Improvement</span>}
                         {!isStrong && !isWeak && <span className="text-xs text-slate-400 dark:text-slate-500">Pending</span>}
                       </div>
                       {isWeak && (
@@ -363,14 +397,19 @@ export default function StudentDashboard() {
                         </button>
                       )}
                     </div>
-                    <div className="tooltip-wrapper shrink-0">
+                    <div className="tooltip-wrapper shrink-0 flex items-center gap-2">
+                      <button
+                        onClick={() => navigate(`/course/${topic._id}`)}
+                        className="btn-interactive text-xs bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-500 transition-all shadow-md shadow-indigo-500/25 flex items-center gap-1.5"
+                      >
+                        <PlayCircle className="w-3.5 h-3.5" /> Course
+                      </button>
                       <button
                         onClick={() => navigate(`/quiz/${topic._id}`)}
-                        className="btn-interactive text-xs bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition-all flex items-center gap-2"
+                        className="btn-interactive text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-all flex items-center gap-1.5"
                       >
-                        <Zap className="w-3 h-3" /> Take Quiz
+                        <Zap className="w-3.5 h-3.5" /> Quiz
                       </button>
-                      <span className="tooltip-text">Test your knowledge on this topic</span>
                     </div>
                   </div>
                 </div>
@@ -399,7 +438,7 @@ export default function StudentDashboard() {
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                 <Radar name="Student" dataKey="A" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.5} />
                 <Radar name="Industry Avg" dataKey="B" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.2} />
-                <Tooltip contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff'}} />
+                <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -410,62 +449,80 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* AI Critical Weak Area Insight Card */}
-      {(Array.isArray(weakSkills) ? weakSkills : []).length > 0 && (
-        <div className="bg-gradient-to-r from-rose-500 to-rose-600 rounded-2xl p-6 text-white shadow-lg opacity-0 animate-fade-in-up" style={{ animationDelay: '0.68s' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-rose-100 text-sm font-semibold uppercase tracking-wider mb-1">🔥 AI Critical Alert</p>
-              <h3 className="text-2xl font-extrabold">Weakest Topic: <span className="underline decoration-dotted">{(Array.isArray(weakSkills) ? weakSkills : [])[0]}</span></h3>
-              <p className="text-rose-100 text-sm mt-2">Your performance in this area is significantly below the class average. The AI has moved it to the top of your roadmap.</p>
+      {/* ── AI Simulation Engine Card ── */}
+      {aiInsights && (
+        <div className="bg-white dark:bg-slate-800 shadow-xl shadow-indigo-500/5 rounded-3xl border border-indigo-100 dark:border-indigo-500/20 p-8 opacity-0 animate-fade-in-up hover:shadow-2xl transition-all duration-500" style={{ animationDelay: '0.65s' }}>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 flex items-center justify-center relative overflow-hidden">
+              <Brain className="w-6 h-6 text-indigo-600 dark:text-indigo-400 relative z-10 animate-pulse" />
+              <div className="absolute inset-0 bg-indigo-500/10 blur-xl animate-spin-slow"></div>
             </div>
-            <div className="p-4 bg-white/10 rounded-xl backdrop-blur-sm shrink-0 ml-4">
-              <AlertTriangle className="w-10 h-10 text-rose-200" />
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                AI Intelligence Core <Sparkles className="w-4 h-4 text-amber-500" />
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Personalized career and skill analysis</p>
+            </div>
+          </div>
+
+          <div className="p-5 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 mb-8 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+            <p className="text-indigo-900 dark:text-indigo-200 font-medium leading-relaxed">
+              <strong className="text-indigo-700 dark:text-indigo-400 font-bold">🤖 Analysis:</strong> {aiInsights.recommendation}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Job Readiness */}
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 flex flex-col justify-center items-center text-center">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-3">
+                <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Job Readiness</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-black text-slate-900 dark:text-white">{aiInsights.jobReadiness}</span>
+                <span className="text-lg font-bold text-slate-400">%</span>
+              </div>
+              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-3 overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }} animate={{ width: `${aiInsights.jobReadiness}%` }} transition={{ duration: 1, delay: 0.8 }}
+                  className="bg-emerald-500 h-1.5 rounded-full"
+                />
+              </div>
+            </div>
+
+            {/* Career Suggestion */}
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 flex flex-col justify-center items-center text-center">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-3">
+                <Briefcase className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Predicted Path</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white leading-tight">{aiInsights.careerSuggestion}</p>
+            </div>
+
+            {/* Skill Gap */}
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 flex flex-col justify-center items-center text-center">
+              <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-3">
+                <Cpu className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+              </div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Skill Gap Focus</p>
+              {aiInsights.skillGap?.weak?.length > 0 ? (
+                <div className="flex flex-wrap justify-center gap-1.5 mt-1">
+                  {aiInsights.skillGap.weak.slice(0, 2).map((skill, idx) => (
+                    <span key={idx} className="px-2 py-1 bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 text-[10px] font-bold rounded-md">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm font-semibold text-emerald-500">No major gaps identified</p>
+              )}
             </div>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Skill Gap Analysis & Weak Areas */}
-        <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-8 opacity-0 animate-fade-in-up hover:shadow-md transition-shadow" style={{ animationDelay: '0.65s' }}>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-            <AlertTriangle className="text-rose-500 w-6 h-6" />
-            Weak Areas & Skill Gaps
-          </h2>
-          
-          <div className="mb-6 border-b border-slate-100 dark:border-slate-700 pb-6">
-            <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-3">Industry Trends vs Your Skills</h3>
-            <div className="space-y-3">
-              {(Array.isArray(strongSkills) ? strongSkills : []).map(skill => (
-                <div key={skill} className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{skill}</span>
-                  <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs font-semibold rounded-full">Mastered</span>
-                </div>
-              ))}
-              {(Array.isArray(weakSkills) ? weakSkills : []).map(skill => (
-                <div key={skill} className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{skill}</span>
-                  <span className="px-2.5 py-1 bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 text-xs font-semibold rounded-full">Needs Practice</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-3">Identified Weak Areas</h3>
-            {(Array.isArray(weakSkills) ? weakSkills : []).length > 0 ? (
-              <ul className="list-disc pl-5 text-sm text-slate-600 dark:text-slate-400 space-y-2">
-                {(Array.isArray(weakSkills) ? weakSkills : []).map(skill => (
-                  <li key={skill}>Your proficiency in <strong className="text-slate-800 dark:text-slate-200">{skill}</strong> is below your target goal. The AI has recommended a review quiz.</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-slate-500">You currently have no identified weak areas. Keep it up!</p>
-            )}
-          </div>
-        </div>
-
         {/* Progress Chart */}
         <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-8 opacity-0 animate-fade-in-up hover:shadow-md transition-shadow" style={{ animationDelay: '0.7s' }}>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
@@ -474,13 +531,13 @@ export default function StudentDashboard() {
           </h2>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analytics?.attempts?.map((a, i) => ({ name: `Quiz ${i+1}`, hours: Math.round(a.totalTimeTakenSeconds / 60) })) || []} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <BarChart data={analytics?.attempts?.map((a, i) => ({ name: `Quiz ${i + 1}`, hours: Math.round(a.totalTimeTakenSeconds / 60) })) || []} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#64748b" strokeOpacity={0.2} />
-                <XAxis dataKey="name" tick={{fill: '#64748b'}} axisLine={false} tickLine={false} />
-                <YAxis tick={{fill: '#64748b'}} axisLine={false} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff'}}
-                  cursor={{fill: '#cbd5e1', opacity: 0.1}}
+                <XAxis dataKey="name" tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
+                  cursor={{ fill: '#cbd5e1', opacity: 0.1 }}
                 />
                 <Bar dataKey="hours" fill="#3b82f6" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -490,9 +547,9 @@ export default function StudentDashboard() {
       </div>
 
       {/* AI Explanation Modal */}
-      <Modal 
-        isOpen={explanationModal.isOpen} 
-        onClose={() => setExplanationModal({ isOpen: false, topic: null })} 
+      <Modal
+        isOpen={explanationModal.isOpen}
+        onClose={() => setExplanationModal({ isOpen: false, topic: null })}
         title="AI Recommendation Engine"
         footer={
           <button onClick={() => setExplanationModal({ isOpen: false, topic: null })} className="px-5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">Understood</button>
@@ -507,7 +564,7 @@ export default function StudentDashboard() {
                 <p className="text-sm text-indigo-200 mt-1">Our AI curriculum engine detected a critical skill gap based on your recent quiz attempts.</p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-slate-800 border border-slate-700 p-4 rounded-xl text-center">
                 <p className="text-sm font-semibold text-slate-400 uppercase">Your Performance</p>

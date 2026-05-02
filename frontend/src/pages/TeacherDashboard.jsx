@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Users, FileUp, AlertCircle, BarChart2, CheckCircle2, Clock, XCircle, FileText, TrendingUp } from 'lucide-react';
+import { BookOpen, Users, FileUp, AlertCircle, BarChart2, CheckCircle2, Clock, XCircle, FileText, TrendingUp, Brain, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell, Legend, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
 import api from '../services/api';
 import Modal from '../components/Modal';
@@ -12,10 +12,11 @@ import { toast } from 'react-toastify';
 
 // Removed hardcoded engagementData
 
-const healthData = [
-  { name: 'Relevant', value: 65, color: '#10b981' },
-  { name: 'Emerging', value: 20, color: '#3b82f6' },
-  { name: 'Outdated', value: 15, color: '#ef4444' },
+const performanceTrends = [
+  { week: 'Week 1', score: 65, engagement: 70 },
+  { week: 'Week 2', score: 72, engagement: 75 },
+  { week: 'Week 3', score: 68, engagement: 60 },
+  { week: 'Week 4', score: 82, engagement: 90 },
 ];
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -198,6 +199,19 @@ export default function TeacherDashboard() {
       </div>
 
       <div className="space-y-4">
+        {/* Fake Dynamic Insight */}
+        <div className="bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-500 p-4 rounded-r-lg shadow-sm">
+          <div className="flex items-center">
+            <Brain className="text-indigo-500 h-6 w-6 mr-3" />
+            <div>
+              <h3 className="text-sm font-bold text-indigo-800 dark:text-indigo-300">🤖 AI Dynamic Insight</h3>
+              <p className="text-sm text-indigo-700 dark:text-indigo-400 mt-1">
+                70% of students struggled with <span className="font-bold">React Hooks</span> this week. Consider scheduling a review session. Engagement is up 15% overall.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {(Array.isArray(safeRecommendations) ? safeRecommendations : []).filter(r => r?.action === 'improve').map((alert) => (
           <div key={alert.id || Math.random()} className="bg-rose-50 dark:bg-rose-900/20 border-l-4 border-rose-500 p-4 rounded-r-lg shadow-sm animate-pulse">
             <div className="flex items-center">
@@ -264,20 +278,46 @@ export default function TeacherDashboard() {
               </div>
             </div>
 
-            {/* Bar chart of topic difficulty */}
-            <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <BarChart2 className="w-5 h-5 text-indigo-500" /> Topic Weak Percentage (Class Analytics)
-              </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={sorted.slice(0, 8)} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="topicTitle" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="weakPercentage" name="Weak %" fill="#f43f5e" radius={[4,4,0,0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+              {/* Performance Trend AreaChart */}
+              <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-indigo-500" /> Class Performance Trends
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <AreaChart data={performanceTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area type="monotone" dataKey="score" name="Avg Score" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorScore)" />
+                    <Area type="monotone" dataKey="engagement" name="Engagement %" stroke="#3b82f6" strokeWidth={2} strokeDasharray="4 4" fill="none" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Strengths vs Weakness RadarChart */}
+              <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-emerald-500" /> Topic Proficiency Radar
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={sorted.slice(0, 5).map(t => ({ subject: t.topicTitle.substring(0, 10) + '...', score: 100 - (t.weakPercentage || 0) }))}>
+                    <PolarGrid stroke="#64748b" strokeOpacity={0.2} />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                    <Radar name="Proficiency" dataKey="score" stroke="#10b981" strokeWidth={2} fill="#10b981" fillOpacity={0.4} />
+                    <Tooltip contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff'}} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         );

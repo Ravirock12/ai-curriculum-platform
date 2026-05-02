@@ -15,6 +15,7 @@ import Curriculum from './pages/Curriculum';
 import Analytics from './pages/Analytics';
 import QuizChat from './pages/QuizChat';
 import Leaderboard from './pages/Leaderboard';
+import CourseLearning from './pages/CourseLearning';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/ReactToastify.css';
 
@@ -35,6 +36,7 @@ function App() {
               <Route path="/quiz/:topicId" element={<QuizChat />} />
               <Route path="/quiz/competition" element={<QuizChat />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/course/:topicId" element={<CourseLearning />} />
             </Route>
           </Routes>
           <ToastContainer position="top-right" autoClose={2000} hideProgressBar={false} theme="dark" />
