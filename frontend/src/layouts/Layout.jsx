@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { LayoutDashboard, BookOpen, BarChart3, LogOut, Menu, Moon, Sun, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
-import api from '../utils/api';
+import api from '../services/api';
 import { toast } from 'react-toastify';
 
 const Layout = () => {
@@ -64,22 +64,7 @@ const Layout = () => {
         </div>
 
         <div className="mt-auto w-full p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 space-y-2">
-          <button
-            onClick={async () => {
-              try {
-                toast.info('Resetting Demo Data...');
-                await api.post('/auth/reset-demo');
-                toast.success('Demo reset successfully!');
-                setTimeout(() => window.location.reload(), 1000);
-              } catch (e) {
-                toast.error('Failed to reset demo');
-              }
-            }}
-            className="flex w-full items-center px-3 py-2 text-sm font-bold rounded-lg text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-md shadow-amber-500/20 transition-all border border-amber-400 dark:border-amber-600"
-          >
-            <RefreshCw className="mr-3 h-5 w-5" />
-            Reset Demo DB
-          </button>
+
           
           <button
             onClick={logout}

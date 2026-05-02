@@ -5,7 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Layout
-import Layout from './components/Layout';
+import Layout from './layouts/Layout';
 
 // Pages
 import Home from './pages/Home';

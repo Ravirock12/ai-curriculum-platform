@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import api from '../services/api';
 import { Sparkles, AlertTriangle, PlusCircle, RefreshCw, TrendingUp, CheckCircle2, ArrowRight, Zap, Target, History, ArrowDown } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Clock, TrendingUp, Award, BookOpen, Activity, AlertTriangle, Zap, AlertCircle, ArrowDown, ShieldCheck } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import api from '../utils/api';
+import api from '../services/api';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
 

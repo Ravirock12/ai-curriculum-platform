@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Users, ShieldCheck, Activity, Settings, CheckCircle2, XCircle, AlertCircle, TrendingDown, Brain, BarChart2 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend
+  ResponsiveContainer, PieChart, Pie, Cell, Legend,
+  LineChart, Line, AreaChart, Area
 } from 'recharts';
-import api from '../utils/api';
+import api from '../services/api';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
 
@@ -22,6 +23,21 @@ const DashboardCard = ({ title, value, icon: Icon, color, sub }) => (
 );
 
 const PIE_COLORS = ['#10b981', '#3b82f6', '#ef4444'];
+
+const userGrowthData = [
+  { name: 'Jan', users: 40 },
+  { name: 'Feb', users: 85 },
+  { name: 'Mar', users: 120 },
+  { name: 'Apr', users: 190 },
+  { name: 'May', users: 256 },
+];
+
+const courseEngagementData = [
+  { name: 'W1', hours: 120 },
+  { name: 'W2', hours: 250 },
+  { name: 'W3', hours: 400 },
+  { name: 'W4', hours: 580 },
+];
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload?.length) {
@@ -255,6 +271,47 @@ export default function AdminDashboard() {
                   <Legend />
                   <Tooltip />
                 </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* New Analytics Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            {/* User Growth */}
+            <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-emerald-500" /> Platform User Growth
+              </h3>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={userGrowthData} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area type="monotone" dataKey="users" stroke="#10b981" fillOpacity={1} fill="url(#colorUsers)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Course Engagement */}
+            <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-blue-500" /> Course Engagement (Hours)
+              </h3>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={courseEngagementData} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Line type="monotone" dataKey="hours" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </div>

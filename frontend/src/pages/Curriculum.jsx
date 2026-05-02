@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../utils/api';
+import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AlertCircle, CheckCircle, Clock, BookOpen, PlusCircle, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';

@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import api from '../utils/api';
+import api from '../services/api';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
 

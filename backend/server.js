@@ -54,8 +54,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Admin: force wipe + re-seed (safe to call in any env, protected by caller)
+// Admin: force wipe + re-seed (protected by ADMIN_SECRET)
 app.post('/api/admin/reset-db', async (req, res) => {
+  // Hardened security check
+  const adminKey = req.headers['x-admin-key'];
+  if (!adminKey || adminKey !== process.env.ADMIN_SECRET) {
+    console.warn('⚠️ Unauthorized reset-db attempt');
+    return res.status(403).json({ success: false, message: 'Unauthorized' });
+  }
+
   try {
     await seedDatabase(true);
     res.json({ success: true, message: '✅ DB reset and re-seeded successfully.' });

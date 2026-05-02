@@ -32,13 +32,13 @@ const seedDatabase = async (forceReseed = false) => {
 
     // ── Shared password hash (used for all seeded accounts) ──
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('password123', salt);
+    const hashedPassword = await bcrypt.hash('123456', salt);
 
     // ── Core users ───────────────────────────────────────────
     await User.create([
-      { name: 'Admin User',   email: 'admin@college.edu',   password: hashedPassword, role: 'admin'   },
-      { name: 'Teacher User', email: 'teacher@college.edu', password: hashedPassword, role: 'teacher' },
-      { name: 'Student User', email: 'student@college.edu', password: hashedPassword, role: 'student' },
+      { name: 'Admin Demo',   email: 'admin@demo.com',   password: hashedPassword, role: 'admin'   },
+      { name: 'Teacher Demo', email: 'teacher@demo.com', password: hashedPassword, role: 'teacher' },
+      { name: 'Student Demo', email: 'student@demo.com', password: hashedPassword, role: 'student' },
     ]);
 
     // ── CSE Branch Topics ────────────────────────────────────
@@ -199,7 +199,7 @@ const seedDatabase = async (forceReseed = false) => {
     const mockAttempts = [];
 
     for (let i = 0; i < 5; i++) {
-      const hashedPw = await bcrypt.hash('password123', salt);
+      const hashedPw = await bcrypt.hash('123456', salt);
       const student = await User.create({
         name: `Test Student ${i}`,
         email: `student${i}@college.edu`,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import api from '../utils/api';
+import api from '../services/api';
 import { Trophy, Clock, Star, ArrowLeft, Radio } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
@@ -32,10 +32,10 @@ export default function Leaderboard() {
 
   // Socket.IO connection
   useEffect(() => {
-    const socket = io('http://localhost:5000', { transports: ['websocket', 'polling'] });
+    const socket = io(import.meta.env.VITE_API_URL || '/', { transports: ['websocket', 'polling'] });
     socketRef.current = socket;
 
-    socket.on('connect', () => console.log('🔴 Leaderboard socket connected'));
+    socket.on('connect', () => {});
 
     socket.on('leaderboardUpdated', (payload) => {
       // Flash indicator + refetch
