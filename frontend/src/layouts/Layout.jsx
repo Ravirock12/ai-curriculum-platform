@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { LayoutDashboard, BookOpen, BarChart3, LogOut, Menu, Moon, Sun, Trophy, X, Bell } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import NotificationBell from '../components/NotificationBell';
 
 const Layout = () => {
   const { user, logout } = useAuth();
@@ -21,25 +22,7 @@ const Layout = () => {
   const navigation = allNavItems.filter(item => item.roles.includes(user?.role));
   const closeSidebar = () => setIsSidebarOpen(false);
 
-  // Notifications State
-  const [showNotifications, setShowNotifications] = useState(false);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowNotifications(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const mockNotifications = [
-    { id: 1, text: "New course approved: React Patterns", time: "5m ago", unread: true },
-    { id: 2, text: "Your quiz score is ready!", time: "1h ago", unread: true },
-    { id: 3, text: "System maintenance tonight", time: "1d ago", unread: false }
-  ];
+  // Notification state removed as it is now handled by NotificationBell component
 
   // Role badge colors
   const roleBadge = {
@@ -168,44 +151,8 @@ const Layout = () => {
               </button>
             </div>
             
-            {/* Notifications Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-              >
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900" />
-              </button>
-
-              <AnimatePresence>
-                {showNotifications && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-3 w-80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-700 shadow-2xl rounded-2xl overflow-hidden z-50"
-                  >
-                    <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                      <h3 className="font-bold text-slate-900 dark:text-white text-sm">Notifications</h3>
-                      <button className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Mark all read</button>
-                    </div>
-                    <div className="max-h-80 overflow-y-auto">
-                      {mockNotifications.map(n => (
-                        <div key={n.id} className={`px-4 py-3 border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition cursor-pointer flex gap-3 ${n.unread ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : ''}`}>
-                          <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.unread ? 'bg-indigo-500' : 'bg-transparent'}`} />
-                          <div>
-                            <p className={`text-sm ${n.unread ? 'font-semibold text-slate-900 dark:text-slate-200' : 'text-slate-600 dark:text-slate-400'}`}>{n.text}</p>
-                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{n.time}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 text-center border-t border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                      <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">View all notifications</span>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            {/* Unified Notifications Component */}
+            <NotificationBell />
           </div>
         </div>
 

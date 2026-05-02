@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Clock, TrendingUp, Award, BookOpen, Activity, AlertTriangle, Zap, AlertCircle, ArrowDown, ShieldCheck, RefreshCw, Sparkles, PlayCircle, Brain, Target, Briefcase, Cpu } from 'lucide-react';
+import { CheckCircle, Clock, TrendingUp, Award, BookOpen, Activity, AlertTriangle, Zap, AlertCircle, ArrowDown, ShieldCheck, RefreshCw, Sparkles, PlayCircle, Brain, Target, Briefcase, Cpu, GraduationCap } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { motion } from 'framer-motion';
 import api from '../services/api';
 import Modal from '../components/Modal';
+import RoleRequestModal from '../components/RoleRequestModal';
+import { useNotifications } from '../context/NotificationContext';
 import { toast } from 'react-toastify';
 
 
@@ -38,6 +40,20 @@ export default function StudentDashboard() {
   const [explanationModal, setExplanationModal] = useState({ isOpen: false, topic: null });
   const [schedule, setSchedule] = useState({ cooldownRemainingHours: 0, practiceAvailable: true, nextCompetition: null, isCompetitionDay: false, streak: 0, level: 0 });
   const [error, setError] = useState(null);
+  const [roleRequestModal, setRoleRequestModal] = useState(false);
+  const [existingRoleRequest, setExistingRoleRequest] = useState(null);
+  const { addNotification } = useNotifications();
+
+  const fetchMyRoleRequest = async () => {
+    try {
+      const { data } = await api.get('role-requests/my');
+      if (data?.data?.length > 0) {
+        setExistingRoleRequest(data.data[0]); // most recent
+      }
+    } catch { /* ignore */ }
+  };
+
+  useEffect(() => { fetchMyRoleRequest(); }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,10 +61,10 @@ export default function StudentDashboard() {
         setError(null);
         // Fetch subjects, analytics and schedule
         const [subjectsRes, analyticsRes, scheduleRes, aiRes] = await Promise.all([
-          api.get('/curriculum/subjects'),
-          api.get('/quiz/analytics/student').catch(() => ({ data: null })),
-          api.get('/quiz/schedule').catch(() => ({ data: null })),
-          api.get('/ai/recommendation').catch(() => ({ data: null }))
+          api.get('curriculum/subjects'),
+          api.get('quiz/analytics/student').catch(() => ({ data: null })),
+          api.get('quiz/schedule').catch(() => ({ data: null })),
+          api.get('ai/recommendation').catch(() => ({ data: null }))
         ]);
         if (scheduleRes.data) setSchedule(scheduleRes.data);
         if (aiRes.data) setAiInsights(aiRes.data);
@@ -66,7 +82,7 @@ export default function StudentDashboard() {
 
         // Profile fetch — may 404 for demo fallback users; handle gracefully
         try {
-          const userRes = await api.get('/auth/profile');
+          const userRes = await api.get('auth/profile');
           const userData = userRes.data || {};
           setStats({
             completed: (userData.progress || []).filter(p => p.status === 'completed').length,
@@ -91,6 +107,18 @@ export default function StudentDashboard() {
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (stats?.weakSkills?.length > 0) {
+      addNotification({
+        title: 'Action Required',
+        message: `You are struggling with ${stats.weakSkills.join(', ')}. Your roadmap has been updated.`,
+        type: 'warning',
+        role: 'student',
+        link: '/curriculum'
+      });
+    }
+  }, [stats?.weakSkills?.length, addNotification]);
 
   // Safe destructure — guards against any edge case where setStats wasn't called yet
   const {
@@ -257,21 +285,8 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {(Array.isArray(weakSkills) ? weakSkills : []).length > 0 && (
-        <div className="bg-rose-50 dark:bg-rose-900/20 border-l-4 border-rose-500 p-4 rounded-r-lg shadow-sm opacity-0 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
-          <div className="flex items-center">
-            <AlertCircle className="text-rose-500 h-6 w-6 mr-3" />
-            <div>
-              <h3 className="text-sm font-bold text-rose-800 dark:text-rose-300">⚠️ Action Required</h3>
-              <p className="text-sm text-rose-700 dark:text-rose-400 mt-1">
-                You are struggling with <span className="font-bold">{(Array.isArray(weakSkills) ? weakSkills : []).join(', ')}</span>. We've updated your roadmap to prioritize these topics.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+
         {/* Performance Summary Card */}
         <div className="lg:col-span-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-sm opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           <div className="flex justify-between items-start">
@@ -582,6 +597,43 @@ export default function StudentDashboard() {
           </div>
         )}
       </Modal>
+
+      {/* Role Upgrade CTA */}
+      <div className="bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/40 dark:to-violet-950/40 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.9s' }}>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shrink-0">
+            <GraduationCap className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div>
+            <p className="font-bold text-slate-900 dark:text-white">Want to become a Teacher?</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              {existingRoleRequest?.status === 'pending'
+                ? '⏳ Your request is under admin review.'
+                : existingRoleRequest?.status === 'approved'
+                ? '✅ You have been approved! Re-login to see your new role.'
+                : 'Submit a request and an admin will review your application.'}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setRoleRequestModal(true)}
+          disabled={existingRoleRequest?.status === 'pending' || existingRoleRequest?.status === 'approved'}
+          className="shrink-0 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition flex items-center gap-2"
+        >
+          <GraduationCap className="w-4 h-4" />
+          {existingRoleRequest ? 'View Request' : 'Apply Now'}
+        </button>
+      </div>
+
+      {/* Role Request Modal */}
+      <RoleRequestModal
+        isOpen={roleRequestModal}
+        onClose={(refresh) => {
+          setRoleRequestModal(false);
+          if (refresh) fetchMyRoleRequest();
+        }}
+        existingRequest={existingRoleRequest}
+      />
 
     </motion.div>
   );

@@ -391,22 +391,173 @@ export const getStudentAnalytics = async (req, res) => {
 };
 
 // GET /api/quiz/analytics/class
+// Returns topic analytics. Teachers ONLY see their own branch. Admins see all (optional ?branch= filter).
 export const getClassAnalytics = async (req, res) => {
   try {
-    const allTopics = await Topic.find();
+    // Security: derive branch from the authenticated user, not from query params.
+    // Admins can optionally override with ?branch=
+    let branch;
+    if (req.user.role === 'admin') {
+      branch = req.query.branch || null; // null = all branches
+    } else {
+      branch = req.user.branch; // teachers LOCKED to their own branch
+    }
+
+    const topicFilter = branch ? { branch } : {};
+    const allTopics = await Topic.find(topicFilter);
+
     const analytics = await Promise.all(allTopics.map(async (topic) => {
       const attempts = await QuizAttempt.find({ topicId: topic._id });
       if (attempts.length === 0) return null;
       const totalStudents = new Set(attempts.map(a => a.userId.toString())).size;
       const weakAttempts = attempts.filter(a => a.performanceTag === 'poor' || a.performanceTag === 'average');
       const weakPercentage = (weakAttempts.length / attempts.length) * 100;
-      return { topicId: topic._id, topicTitle: topic.title, totalAttempts: attempts.length, uniqueStudents: totalStudents, weakPercentage: Math.round(weakPercentage), isCritical: weakPercentage > 60 };
+      return {
+        topicId: topic._id,
+        topicTitle: topic.title,
+        branch: topic.branch,
+        totalAttempts: attempts.length,
+        uniqueStudents: totalStudents,
+        weakPercentage: Math.round(weakPercentage),
+        isCritical: weakPercentage > 60
+      };
     }));
+
     res.json(analytics.filter(a => a !== null));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+// GET /api/quiz/branch/students
+// Returns all student profiles + quiz stats for the teacher's branch.
+// Branch is derived from teacher's profile — not from query string (prevents cross-branch snooping).
+export const getBranchStudents = async (req, res) => {
+  try {
+    // Enforce: only teachers/admins reach here (middleware handles it).
+    // Lock teacher to their own branch. Admin can use ?branch= override.
+    let branch;
+    if (req.user.role === 'admin') {
+      branch = req.query.branch || req.user.branch;
+    } else {
+      branch = req.user.branch; // LOCKED — teacher cannot query another branch
+    }
+
+    if (!branch) {
+      return res.status(400).json({ message: 'Branch could not be determined. Please ensure your profile has a branch assigned.' });
+    }
+
+    // Fetch students in this branch only
+    const students = await User.find({ branch, role: 'student' })
+      .select('name email branch skillProfile.overallScore skillProfile.xp skillProfile.badges skillProfile.weakSkills skillProfile.strongSkills skillProfile.skillLevel createdAt')
+      .lean();
+
+    // Enrich each student with their quiz attempt summary
+    const enriched = await Promise.all(students.map(async (student) => {
+      const attempts = await QuizAttempt.find({ userId: student._id })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean();
+
+      const totalAttempts = attempts.length;
+      const avgScore = totalAttempts > 0
+        ? Math.round(attempts.reduce((sum, a) => sum + (a.score / a.totalQuestions) * 100, 0) / totalAttempts)
+        : 0;
+
+      const lastActivity = attempts.length > 0 ? attempts[0].createdAt : null;
+
+      return {
+        ...student,
+        quizStats: { totalAttempts, avgScore, lastActivity }
+      };
+    }));
+
+    res.json({
+      branch,
+      totalStudents: enriched.length,
+      students: enriched
+    });
+  } catch (error) {
+    console.error('getBranchStudents error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET /api/quiz/branch/summary
+// Returns aggregate stats for the teacher's branch: avg score, top/weak topics, student count.
+export const getBranchSummary = async (req, res) => {
+  try {
+    let branch;
+    if (req.user.role === 'admin') {
+      branch = req.query.branch || req.user.branch;
+    } else {
+      branch = req.user.branch; // LOCKED
+    }
+
+    if (!branch) {
+      return res.status(400).json({ message: 'Branch not set on teacher profile.' });
+    }
+
+    // All students in branch
+    const students = await User.find({ branch, role: 'student' }).lean();
+    const studentIds = students.map(s => s._id);
+
+    // All quiz attempts by students in this branch
+    const attempts = await QuizAttempt.find({ userId: { $in: studentIds } })
+      .populate('topicId', 'title branch')
+      .lean();
+
+    const totalAttempts = attempts.length;
+    const branchAvgScore = totalAttempts > 0
+      ? Math.round(attempts.reduce((sum, a) => sum + (a.score / a.totalQuestions) * 100, 0) / totalAttempts)
+      : 0;
+
+    // Per-topic aggregation
+    const topicMap = {};
+    attempts.forEach(att => {
+      const key = att.topicId?._id?.toString();
+      if (!key) return;
+      if (!topicMap[key]) {
+        topicMap[key] = { title: att.topicId.title, scores: [], weakCount: 0, total: 0 };
+      }
+      topicMap[key].scores.push((att.score / att.totalQuestions) * 100);
+      topicMap[key].total++;
+      if (att.performanceTag === 'poor' || att.performanceTag === 'average') {
+        topicMap[key].weakCount++;
+      }
+    });
+
+    const topicStats = Object.values(topicMap).map(t => ({
+      title: t.title,
+      avgScore: Math.round(t.scores.reduce((a, b) => a + b, 0) / t.scores.length),
+      weakPercentage: Math.round((t.weakCount / t.total) * 100),
+      totalAttempts: t.total
+    })).sort((a, b) => b.weakPercentage - a.weakPercentage);
+
+    const weakTopics  = topicStats.filter(t => t.weakPercentage > 60).slice(0, 5);
+    const strongTopics = [...topicStats].sort((a, b) => a.weakPercentage - b.weakPercentage).slice(0, 5);
+
+    // Performance distribution
+    const distribution = { excellent: 0, good: 0, average: 0, poor: 0 };
+    attempts.forEach(a => { if (distribution[a.performanceTag] !== undefined) distribution[a.performanceTag]++; });
+
+    res.json({
+      branch,
+      totalStudents: students.length,
+      totalAttempts,
+      branchAvgScore,
+      topicStats,
+      weakTopics,
+      strongTopics,
+      distribution
+    });
+  } catch (error) {
+    console.error('getBranchSummary error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 
 // POST /api/quiz/seed
 export const seedQuizzes = async (req, res) => {

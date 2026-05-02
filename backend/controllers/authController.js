@@ -22,9 +22,9 @@ const mockSendEmail = (email, otp, type) => {
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role, branch } = req.body;
-    
-    // 1. Removed .edu restriction for demo
+    const { name, email, password, branch } = req.body;
+    // NOTE: 'role' is intentionally NOT destructured from req.body.
+    // All users register as 'student'. Role upgrades go through the RoleRequest approval system.
 
     const emailRegex = new RegExp('^' + email + '$', 'i');
     const userExists = await User.findOne({ email: emailRegex });
@@ -34,12 +34,12 @@ export const registerUser = async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    
+
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      role: role || 'student',
+      role: 'student',  // HARDCODED — no role injection possible
       branch: branch || 'CSE'
     });
 
@@ -57,6 +57,92 @@ export const registerUser = async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// ── ADMIN CREATION & PROMOTION ──────────────────────────────────────
+
+// POST /api/auth/admin/register-with-key
+// Create an admin user bypassing normal registration, IF the correct secret key is provided.
+export const createAdminWithKey = async (req, res) => {
+  try {
+    const { name, email, password, branch } = req.body;
+    const adminKey = req.headers['x-admin-key'];
+
+    // 1. Verify Secret Key
+    if (!adminKey || adminKey !== process.env.ADMIN_SECRET) {
+      console.warn('⚠️ Unauthorized admin creation attempt');
+      return res.status(403).json({ success: false, message: 'Invalid or missing admin key.' });
+    }
+
+    // 2. Check if user exists
+    const emailRegex = new RegExp('^' + email + '$', 'i');
+    const userExists = await User.findOne({ email: emailRegex });
+    if (userExists) {
+      return res.status(400).json({ success: false, message: 'User already exists' });
+    }
+
+    // 3. Hash password and create admin
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const adminUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: 'admin', // HARDCODED secure role assignment
+      branch: branch || 'ALL'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Admin created successfully.',
+      data: {
+        _id: adminUser.id,
+        name: adminUser.name,
+        email: adminUser.email,
+        role: adminUser.role,
+        token: generateToken(adminUser._id),
+      }
+    });
+  } catch (error) {
+    console.error('createAdminWithKey error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// PATCH /api/auth/admin/promote/:userId
+// Existing admin promotes another user to admin status
+export const promoteToAdmin = async (req, res) => {
+  try {
+    // Note: This route must be protected by the `adminOnly` middleware
+    const { userId } = req.params;
+
+    const userToPromote = await User.findById(userId);
+    if (!userToPromote) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    if (userToPromote.role === 'admin') {
+      return res.status(400).json({ success: false, message: 'User is already an admin.' });
+    }
+
+    // Perform promotion
+    userToPromote.role = 'admin';
+    await userToPromote.save();
+
+    res.json({
+      success: true,
+      message: `${userToPromote.name} has been promoted to Admin.`,
+      data: {
+        _id: userToPromote._id,
+        name: userToPromote.name,
+        role: userToPromote.role
+      }
+    });
+  } catch (error) {
+    console.error('promoteToAdmin error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
@@ -127,18 +213,18 @@ export const verifyOTP = async (req, res) => {
     const { email, otp } = req.body;
     const emailRegex = new RegExp('^' + email + '$', 'i');
     const user = await User.findOne({ email: emailRegex });
-    
+
     if (!user) return res.status(404).json({ message: 'User not found' });
     if (user.otpAttempts >= 5) return res.status(429).json({ message: 'Too many OTP attempts. Please try again later.' });
     if (!user.otpExpires || user.otpExpires < new Date()) return res.status(400).json({ message: 'OTP has expired.' });
-    
+
     if (user.otp === otp) {
       // Success
       user.otp = undefined;
       user.otpExpires = undefined;
       user.otpAttempts = 0;
       await user.save();
-      
+
       res.json({
         _id: user.id,
         name: user.name,
@@ -162,14 +248,14 @@ export const forgotPassword = async (req, res) => {
     const { email } = req.body;
     const emailRegex = new RegExp('^' + email + '$', 'i');
     let user = await User.findOne({ email: emailRegex });
-    
+
     if (!user) {
       if (email.includes('admin') || email.includes('teacher') || email.includes('student')) {
         return res.json({ message: 'Proceed to reset password.' });
       }
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     res.json({ message: 'Proceed to reset password.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -181,18 +267,18 @@ export const resetPassword = async (req, res) => {
     const { email, newPassword } = req.body;
     const emailRegex = new RegExp('^' + email + '$', 'i');
     const user = await User.findOne({ email: emailRegex });
-    
+
     if (!user) {
       if (email.includes('admin') || email.includes('teacher') || email.includes('student')) {
         return res.json({ message: 'Password reset successfully (DEMO FALLBACK).' });
       }
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
     await user.save();
-    
+
     res.json({ message: 'Password has been reset successfully.' });
   } catch (error) {
     res.status(500).json({ message: error.message });

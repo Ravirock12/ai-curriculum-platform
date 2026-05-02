@@ -17,6 +17,9 @@ import authRoutes from './routes/authRoutes.js';
 import curriculumRoutes from './routes/curriculumRoutes.js';
 import quizRoutes from './routes/quizRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import roleRequestRoutes from './routes/roleRequestRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 // Safe ENV check — confirms variable is loaded WITHOUT leaking the URI value
 console.log('ENV loaded:', !!process.env.MONGO_URI);
@@ -67,6 +70,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/curriculum', curriculumRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/role-requests', roleRequestRoutes); // Role upgrade approval system (plural)
+app.use('/api/role-request', roleRequestRoutes); // Alias for singular (as requested)
+app.use('/api/admin', adminRoutes); // Admin routes
 
 // Health check — used by Render and monitoring tools
 app.get('/api/health', (req, res) => {

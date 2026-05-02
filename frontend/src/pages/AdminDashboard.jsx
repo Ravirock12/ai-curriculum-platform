@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, ShieldCheck, Activity, Settings, CheckCircle2, XCircle, AlertCircle, TrendingDown, Brain, BarChart2 } from 'lucide-react';
+import { Users, ShieldCheck, Activity, Settings, CheckCircle2, XCircle, AlertCircle, TrendingDown, Brain, BarChart2, GraduationCap, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -8,7 +8,9 @@ import {
 } from 'recharts';
 import api from '../services/api';
 import Modal from '../components/Modal';
+import { useNotifications } from '../context/NotificationContext';
 import { toast } from 'react-toastify';
+
 
 const DashboardCard = ({ title, value, icon: Icon, color, sub }) => (
   <motion.div
@@ -71,6 +73,7 @@ export default function AdminDashboard() {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [classAnalytics, setClassAnalytics] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { addNotification } = useNotifications();
 
   // Reject Modal State
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
@@ -80,9 +83,52 @@ export default function AdminDashboard() {
   // Impact Modal State
   const [impactModal, setImpactModal] = useState({ isOpen: false, req: null });
 
+  // Role Request State
+  const [roleRequests, setRoleRequests] = useState([]);
+  const [roleRequestLoading, setRoleRequestLoading] = useState({});
+
+  // Role Approve Modal State
+  const [isRoleApproveModalOpen, setIsRoleApproveModalOpen] = useState(false);
+  const [approvingRoleReq, setApprovingRoleReq] = useState(null);
+  const [selectedRoleBranch, setSelectedRoleBranch] = useState('CSE');
+
+  const openRoleApproveModal = (req) => {
+    setApprovingRoleReq(req);
+    setSelectedRoleBranch(req.requestedBranch || 'CSE');
+    setIsRoleApproveModalOpen(true);
+  };
+
+  const fetchRoleRequests = async () => {
+    try {
+      const { data } = await api.get('admin/requests?status=pending');
+      console.log('AdminDashboard RoleRequests Fetch Result:', data);
+      setRoleRequests(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('fetchRoleRequests failed:', err);
+    }
+  };
+
+  const handleRoleReview = async (id, status, adminSelectedBranch = null) => {
+    setRoleRequestLoading(prev => ({ ...prev, [id]: true }));
+    try {
+      const payload = { status };
+      if (status === 'approved') {
+        payload.adminSelectedBranch = adminSelectedBranch;
+      }
+      await api.patch(`role-requests/${id}/review`, payload);
+      toast.success(status === 'approved' ? `✅ Role granted! User assigned to ${adminSelectedBranch}.` : '❌ Request rejected.');
+      if (status === 'approved') setIsRoleApproveModalOpen(false);
+      fetchRoleRequests();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Action failed.');
+    } finally {
+      setRoleRequestLoading(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
   const fetchCurriculum = async () => {
     try {
-      const { data } = await api.get('/curriculum/subjects');
+      const { data } = await api.get('curriculum/subjects');
       setPendingRequests(Array.isArray(data) ? data.filter(c => c?.status === 'pending') : []);
     } catch (error) {
       console.error('Error fetching curriculum:', error);
@@ -94,8 +140,8 @@ export default function AdminDashboard() {
     const fetchAll = async () => {
       try {
         const [statsRes, analyticsRes] = await Promise.all([
-          api.get('/curriculum/analytics').catch(() => ({ data: null })),
-          api.get('/quiz/analytics/class').catch(() => ({ data: [] })),
+          api.get('curriculum/analytics').catch(() => ({ data: null })),
+          api.get('quiz/analytics/class').catch(() => ({ data: [] })),
         ]);
         setStats(statsRes.data || null);
         setClassAnalytics(Array.isArray(analyticsRes.data) ? analyticsRes.data : []);
@@ -107,6 +153,7 @@ export default function AdminDashboard() {
     };
     fetchAll();
     fetchCurriculum();
+    fetchRoleRequests();
   }, []);
 
   const openRejectModal = (id) => {
@@ -117,7 +164,7 @@ export default function AdminDashboard() {
 
   const handleReview = async (id, status, feedback = '') => {
     try {
-      await api.put(`/curriculum/subjects/${id}/review`, { status, adminFeedback: feedback });
+      await api.put(`curriculum/subjects/${id}/review`, { status, adminFeedback: feedback });
       if (status === 'approved') {
         toast.success('✅ Curriculum approved and published to all students!');
       } else {
@@ -132,7 +179,7 @@ export default function AdminDashboard() {
 
   const handleHardDelete = async (id) => {
     try {
-      await api.delete(`/curriculum/subjects/${id}`);
+      await api.delete(`curriculum/subjects/${id}`);
       toast.success('Curriculum permanently deleted from database.');
       fetchCurriculum();
     } catch (error) {
@@ -143,6 +190,30 @@ export default function AdminDashboard() {
   // ── AI Insights derived from classAnalytics ──
   const safeAnalytics = Array.isArray(classAnalytics) ? classAnalytics : [];
   const criticalTopics = safeAnalytics.filter(t => (t.weakPercentage || 0) > 60);
+
+  useEffect(() => {
+    if (criticalTopics.length > 0) {
+      criticalTopics.forEach(topic => {
+        addNotification({
+          title: 'Curriculum Alert',
+          message: `High failure rate in "${topic.topicTitle}" (${topic.weakPercentage}%). AI recommends a content update.`,
+          type: 'error',
+          role: 'admin',
+          link: '/analytics'
+        });
+      });
+    }
+    if (pendingRequests.length > 0) {
+      addNotification({
+        title: 'Pending Approvals',
+        message: `You have ${pendingRequests.length} curriculum requests waiting for review.`,
+        type: 'warning',
+        role: 'admin',
+        link: '/dashboard'
+      });
+    }
+  }, [criticalTopics.length, pendingRequests.length, addNotification]);
+
   const mostWeakTopic = [...safeAnalytics].sort((a, b) => (b.weakPercentage || 0) - (a.weakPercentage || 0))[0];
   const avgClassScore = safeAnalytics.length > 0
     ? Math.round(100 - safeAnalytics.reduce((a, c) => a + (c.weakPercentage || 0), 0) / safeAnalytics.length)
@@ -230,22 +301,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Critical AI recommendations */}
-          {criticalTopics.map(topic => (
-            <div key={topic.topicId} className="flex items-start gap-3 bg-rose-50 dark:bg-rose-900/20 border-l-4 border-rose-500 p-4 rounded-r-xl shadow-sm">
-              <AlertCircle className="text-rose-500 w-5 h-5 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-bold text-rose-800 dark:text-rose-300">
-                  🤖 AI Recommends: Update curriculum for "{topic.topicTitle}"
-                </p>
-                <p className="text-sm text-rose-700 dark:text-rose-400 mt-0.5">
-                  <span className="font-bold">{topic.weakPercentage}%</span> of students are failing this topic.
-                  Notify the responsible teacher to revise the content.
-                </p>
-              </div>
-            </div>
-          ))}
-
           {/* Charts row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Bar chart: top failing topics */}
@@ -319,7 +374,7 @@ export default function AdminDashboard() {
                     ))}
                   </Pie>
                   <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                  <Tooltip contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff'}} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -464,6 +519,121 @@ export default function AdminDashboard() {
             </p>
           </div>
         )}
+      </Modal>
+
+      {/* ── Role Upgrade Requests ── */}
+      <div className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-8 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <GraduationCap className="text-violet-500 w-6 h-6" />
+            Role Upgrade Requests
+            {roleRequests.length > 0 && (
+              <span className="ml-2 px-2.5 py-0.5 bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 text-xs font-bold rounded-full">
+                {roleRequests.length} pending
+              </span>
+            )}
+          </h2>
+        </div>
+
+        {roleRequests.length === 0 ? (
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+            <GraduationCap className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">No pending role upgrade requests.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Student</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Branch</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Reason</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Submitted</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                {roleRequests.map(req => (
+                  <tr key={req._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
+                    <td className="px-4 py-4">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{req.userId?.name || 'Unknown'}</p>
+                      <p className="text-xs text-slate-400">{req.userId?.email}</p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-xs font-bold">
+                        {req.requestedBranch}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+                      <p className="truncate">{req.reason || <span className="italic opacity-50">No reason provided</span>}</p>
+                    </td>
+                    <td className="px-4 py-4 text-xs text-slate-400">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        {new Date(req.createdAt).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openRoleApproveModal(req)}
+                          disabled={roleRequestLoading[req._id]}
+                          className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-lg transition"
+                        >
+                          {roleRequestLoading[req._id] ? '...' : 'Approve'}
+                        </button>
+                        <button
+                          onClick={() => handleRoleReview(req._id, 'rejected')}
+                          disabled={roleRequestLoading[req._id]}
+                          className="px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-50 border border-rose-200 dark:border-rose-800 rounded-lg transition"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <Modal
+        isOpen={isRoleApproveModalOpen}
+        onClose={() => setIsRoleApproveModalOpen(false)}
+        title="Approve Role Upgrade"
+        footer={
+          <>
+            <button onClick={() => setIsRoleApproveModalOpen(false)} className="px-5 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">Cancel</button>
+            <button
+              onClick={() => handleRoleReview(approvingRoleReq._id, 'approved', selectedRoleBranch)}
+              className="px-5 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-sm"
+              disabled={roleRequestLoading[approvingRoleReq?._id]}
+            >
+              {roleRequestLoading[approvingRoleReq?._id] ? 'Approving...' : 'Confirm Approval'}
+            </button>
+          </>
+        }
+      >
+        <div className="mb-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            You are approving a role upgrade for <span className="font-bold text-slate-900 dark:text-white">{approvingRoleReq?.userId?.name}</span>.
+            Please select the specific branch they will be assigned to. DO NOT rely on user input.
+          </p>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Assign Branch</label>
+          <select
+            value={selectedRoleBranch}
+            onChange={(e) => setSelectedRoleBranch(e.target.value)}
+            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white transition-colors"
+          >
+            <option value="CSE">Computer Science (CSE)</option>
+            <option value="ECE">Electronics (ECE)</option>
+            <option value="EEE">Electrical (EEE)</option>
+            <option value="BIPC">Biology / Medical (BIPC)</option>
+            <option value="AGRI">Agriculture (AGRI)</option>
+          </select>
+        </div>
       </Modal>
 
     </div>

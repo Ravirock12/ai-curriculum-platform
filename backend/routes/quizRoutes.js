@@ -4,6 +4,8 @@ import {
   submitQuiz,
   getStudentAnalytics,
   getClassAnalytics,
+  getBranchStudents,
+  getBranchSummary,
   seedQuizzes,
   getCompetitionQuiz,
   getLeaderboard,
@@ -20,6 +22,8 @@ router.get('/leaderboard',     protect, getLeaderboard);
 router.post('/submit',         protect, submitQuiz);
 router.get('/analytics/student', protect, getStudentAnalytics);
 router.get('/analytics/class',   protect, teacherOrAdmin, getClassAnalytics);
+router.get('/branch/students', protect, teacherOrAdmin, getBranchStudents);
+router.get('/branch/summary', protect, teacherOrAdmin, getBranchSummary);
 router.post('/seed',             protect, teacherOrAdmin, seedQuizzes);
 
 export default router;
