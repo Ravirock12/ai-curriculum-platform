@@ -26,6 +26,28 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Global Response Wrapper
+// Automatically standardizes all outgoing JSON responses to { success, data/message }
+app.use((req, res, next) => {
+  const originalJson = res.json;
+  res.json = function (body) {
+    // Avoid double-wrapping
+    if (body && typeof body === 'object' && ('success' in body)) {
+      return originalJson.call(this, body);
+    }
+    const isError = res.statusCode >= 400;
+    if (isError) {
+      return originalJson.call(this, {
+        success: false,
+        message: body && body.message ? body.message : 'An error occurred',
+        data: body
+      });
+    }
+    return originalJson.call(this, { success: true, data: body || {} });
+  };
+  next();
+});
+
 // ── HTTP Server + Socket.IO ──────────────────────────────────
 const httpServer = http.createServer(app);
 const io = new SocketIOServer(httpServer, {

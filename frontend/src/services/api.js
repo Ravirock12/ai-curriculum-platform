@@ -5,23 +5,9 @@ const api = axios.create({
 });
 
 // Attach token automatically to every request.
-// Reads from 'token' key (set during login) with fallback to 'userInfo' for legacy support.
 api.interceptors.request.use(
   (config) => {
-    // Primary: direct token key
-    let token = localStorage.getItem('token');
-
-    // Fallback: userInfo object (legacy format)
-    if (!token) {
-      const userInfo = localStorage.getItem('userInfo');
-      if (userInfo) {
-        try {
-          const parsed = JSON.parse(userInfo);
-          token = parsed.token;
-        } catch (_) {}
-      }
-    }
-
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,12 +16,24 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Global response interceptor: log 401s clearly for debugging
+// Global response interceptor: log 401s clearly for debugging and unwrap standardized backend responses
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Seamlessly unwrap the { success: true, data: {} } standardized backend format
+    if (response.data && typeof response.data === 'object' && response.data.success === true && response.data.data !== undefined) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       console.warn('[API] 401 Unauthorized — token may be missing or expired.');
+      // Auto-logout on token expiration
+      localStorage.removeItem("token");
+      localStorage.removeItem("userInfo");
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

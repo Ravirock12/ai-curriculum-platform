@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Clock, TrendingUp, Award, BookOpen, Activity, AlertTriangle, Zap, AlertCircle, ArrowDown, ShieldCheck } from 'lucide-react';
+import { CheckCircle, Clock, TrendingUp, Award, BookOpen, Activity, AlertTriangle, Zap, AlertCircle, ArrowDown, ShieldCheck, RefreshCw } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import api from '../services/api';
 import Modal from '../components/Modal';
@@ -30,10 +30,12 @@ export default function StudentDashboard() {
   const [isAiSortingEnabled, setIsAiSortingEnabled] = useState(true);
   const [explanationModal, setExplanationModal] = useState({ isOpen: false, topic: null });
   const [schedule, setSchedule] = useState({ cooldownRemainingHours: 0, practiceAvailable: true, nextCompetition: null, isCompetitionDay: false, streak: 0, level: 0 });
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setError(null);
         // Fetch subjects, analytics and schedule
         const [subjectsRes, analyticsRes, scheduleRes] = await Promise.all([
           api.get('/curriculum/subjects'),
@@ -72,7 +74,8 @@ export default function StudentDashboard() {
         }
       } catch (err) {
         console.error('StudentDashboard fetch error:', err);
-        toast.error('Something went wrong loading your dashboard.');
+        setError(err.response?.data?.message || 'We could not load your dashboard right now. Please check your connection and try again.');
+        toast.error('Dashboard load failed.');
       } finally {
         setLoading(false);
       }
@@ -108,6 +111,24 @@ export default function StudentDashboard() {
     }
     return topics;
   };
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4 px-4 opacity-0 animate-fade-in-up">
+        <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mb-2">
+          <AlertTriangle className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Oops! Something went wrong</h2>
+        <p className="text-slate-500 dark:text-slate-400 max-w-md">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-6 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors shadow-sm flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" /> Try Again
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
