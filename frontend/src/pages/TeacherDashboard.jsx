@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, Users, FileUp, AlertCircle, BarChart2, CheckCircle2, Clock, XCircle, FileText, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -33,16 +34,22 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const DashboardCard = ({ title, value, icon: Icon, color, delay }) => (
-  <div className={`bg-white dark:bg-slate-800 overflow-hidden shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-6 flex items-center transition-all hover:shadow-lg hover:-translate-y-1 opacity-0 animate-fade-in-up`} style={{ animationDelay: delay }}>
-    <div className={`p-4 rounded-xl ${color} text-white mr-5`}>
+const DashboardCard = ({ title, value, icon: Icon, color, delay = 0 }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    transition={{ delay, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+    className="card-premium p-6 flex items-center gap-5 shadow-sm"
+  >
+    <div className={`p-3.5 rounded-2xl ${color} text-white shadow-lg shrink-0`}>
       <Icon className="h-6 w-6" />
     </div>
-    <div>
-      <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{title}</p>
-      <p className="mt-1 text-3xl font-bold text-slate-800 dark:text-white">{value}</p>
+    <div className="min-w-0">
+      <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest truncate">{title}</p>
+      <p className="mt-0.5 text-3xl font-extrabold text-slate-900 dark:text-white">{value}</p>
     </div>
-  </div>
+  </motion.div>
 );
 
 const StatusBadge = ({ status }) => {

@@ -4,6 +4,7 @@ import { Trophy, Clock, Star, ArrowLeft, Radio } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { toast } from 'react-toastify';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const RANK_STYLES = [
   'bg-yellow-400/20 border-yellow-400 text-yellow-300',
@@ -69,7 +70,7 @@ export default function Leaderboard() {
   const myEntry = data.myEntry;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 py-8">
         <div className="max-w-3xl mx-auto">
@@ -184,8 +185,8 @@ export default function Leaderboard() {
             </div>
 
             {/* Full table */}
-            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-              <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-800/50 text-xs font-bold uppercase tracking-wider text-gray-400">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+              <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-slate-50 dark:bg-slate-800/50 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 <div className="col-span-1">Rank</div>
                 <div className="col-span-4">Name</div>
                 <div className="col-span-2">Branch</div>
@@ -195,34 +196,41 @@ export default function Leaderboard() {
                   <Clock className="w-3 h-3 mx-auto" />
                 </div>
               </div>
-              {entries.map((entry, idx) => {
-                const isMe = entry.userId?.toString() === userInfo._id?.toString();
-                return (
-                  <div
-                    key={entry._id || idx}
-                    className={`grid grid-cols-12 gap-2 px-4 py-3 border-t border-gray-800 text-sm transition-colors ${isMe ? 'bg-indigo-600/15 border-indigo-500/30' : 'hover:bg-gray-800/40'}`}
-                  >
-                    <div className="col-span-1 font-bold text-gray-400">
-                      {idx < 3 ? RANK_ICONS[idx] : `#${idx + 1}`}
-                    </div>
-                    <div className="col-span-4 font-semibold truncate">
-                      {entry.name} {isMe && <span className="text-indigo-400 text-xs">(You)</span>}
-                    </div>
-                    <div className="col-span-2 text-gray-400 text-xs flex items-center">
-                      <span className="px-2 py-0.5 bg-gray-700 rounded-full">{entry.branch}</span>
-                    </div>
-                    <div className="col-span-2 text-center font-bold text-indigo-300">{entry.score}</div>
-                    <div className="col-span-2 text-center text-gray-300">
-                      {entry.correctAnswers}/{entry.totalQuestions}
-                    </div>
-                    <div className="col-span-1 text-center text-xs text-gray-400">{formatTime(entry.timeTaken)}</div>
-                  </div>
-                );
-              })}
+              <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                {entries.map((entry, idx) => {
+                  const isMe = entry.userId?.toString() === userInfo._id?.toString();
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + idx * 0.05 }}
+                      key={entry._id || idx}
+                      className={`grid grid-cols-12 gap-2 px-4 py-3 text-sm transition-colors ${
+                        isMe 
+                          ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-900 dark:text-indigo-100' 
+                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <div className="col-span-1 font-bold text-slate-500 dark:text-slate-400 flex items-center">
+                        {idx < 3 ? RANK_ICONS[idx] : `#${idx + 1}`}
+                      </div>
+                      <div className="col-span-4 font-semibold truncate flex items-center">
+                        {entry.name} {isMe && <span className="text-indigo-600 dark:text-indigo-400 text-xs ml-2">(You)</span>}
+                      </div>
+                      <div className="col-span-2 text-xs flex items-center">
+                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-full font-medium text-slate-600 dark:text-slate-400">{entry.branch}</span>
+                      </div>
+                      <div className="col-span-2 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400">{entry.score}</div>
+                      <div className="col-span-2 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                        {entry.correctAnswers}/{entry.totalQuestions}
+                      </div>
+                      <div className="col-span-1 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500">{formatTime(entry.timeTaken)}</div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, ShieldCheck, Activity, Settings, CheckCircle2, XCircle, AlertCircle, TrendingDown, Brain, BarChart2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
@@ -10,16 +11,22 @@ import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
 
 const DashboardCard = ({ title, value, icon: Icon, color, sub }) => (
-  <div className="bg-white dark:bg-slate-800 overflow-hidden shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-6 flex items-center transition-all hover:shadow-lg hover:-translate-y-1">
-    <div className={`p-4 rounded-xl ${color} text-white mr-5 shrink-0`}>
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+    className="card-premium p-6 flex items-center gap-5 shadow-sm"
+  >
+    <div className={`p-3.5 rounded-2xl ${color} text-white shadow-lg shrink-0`}>
       <Icon className="h-6 w-6" />
     </div>
-    <div>
-      <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{title}</p>
-      <p className="mt-1 text-3xl font-bold text-slate-800 dark:text-white">{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+    <div className="min-w-0">
+      <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{title}</p>
+      <p className="mt-0.5 text-3xl font-extrabold text-slate-900 dark:text-white">{value}</p>
+      {sub && <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 font-medium">{sub}</p>}
     </div>
-  </div>
+  </motion.div>
 );
 
 const PIE_COLORS = ['#10b981', '#3b82f6', '#ef4444'];

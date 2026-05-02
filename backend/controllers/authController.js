@@ -69,22 +69,22 @@ export const loginUser = async (req, res) => {
     let user = await User.findOne({ email: emailRegex });
     console.log(`USER FOUND IN DB: ${!!user}`);
 
-    // DEMO FALLBACK (VERY IMPORTANT)
+    // DEMO FALLBACK: upsert so repeated logins never throw duplicate key errors
     if (!user && (email.includes('admin') || email.includes('teacher') || email.includes('student'))) {
-      console.log("FALLING BACK TO DEMO USER...");
+      console.log("FALLING BACK TO DEMO USER (upsert)...");
       const role = email.includes('admin') ? 'admin' : email.includes('teacher') ? 'teacher' : 'student';
       const name = role.charAt(0).toUpperCase() + role.slice(1) + " User (Demo)";
-      
-      // Create a dummy user object for the token and response
-      user = {
-        _id: new mongoose.Types.ObjectId(),
-        id: new mongoose.Types.ObjectId(),
-        name,
-        email,
-        role,
-        branch: 'CSE'
-      };
-      
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('123456', salt);
+
+      // findOneAndUpdate with upsert: creates on first login, returns existing on subsequent logins
+      user = await User.findOneAndUpdate(
+        { email: new RegExp('^' + email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+        { $setOnInsert: { name, email: email.toLowerCase(), password: hashedPassword, role, branch: 'CSE' } },
+        { upsert: true, new: true }
+      );
+
       return res.json({
         _id: user.id,
         name: user.name,
@@ -92,7 +92,6 @@ export const loginUser = async (req, res) => {
         role: user.role,
         branch: user.branch,
         token: generateToken(user._id),
-        message: "Logged in via Demo Fallback"
       });
     }
 

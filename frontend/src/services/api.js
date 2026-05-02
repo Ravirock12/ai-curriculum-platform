@@ -16,7 +16,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Global response interceptor: log 401s clearly for debugging and unwrap standardized backend responses
+// Global response interceptor: unwrap standardized responses and handle 401
 api.interceptors.response.use(
   (response) => {
     // Seamlessly unwrap the { success: true, data: {} } standardized backend format
@@ -28,11 +28,13 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       console.warn('[API] 401 Unauthorized — token may be missing or expired.');
-      // Auto-logout on token expiration
-      localStorage.removeItem("token");
-      localStorage.removeItem("userInfo");
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
-        window.location.href = '/login';
+      // Only auto-clear if it's NOT a login request (we don't want to wipe during login attempts)
+      const isLoginRequest = error.config?.url?.includes('/auth/login');
+      if (!isLoginRequest) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userInfo");
+        // Do NOT use window.location.href — it causes a hard reload that wipes React state
+        // ProtectedRoute will redirect to /login automatically on the next render
       }
     }
     return Promise.reject(error);

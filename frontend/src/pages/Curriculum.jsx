@@ -3,6 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AlertCircle, CheckCircle, Clock, BookOpen, PlusCircle, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Spinner helper
 const Spinner = ({ className = 'w-4 h-4' }) => (
@@ -196,10 +197,16 @@ export default function Curriculum() {
   }
 
   return (
-    <div className="space-y-6 pb-10">
-      <div className="flex justify-between items-center opacity-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
+      className="space-y-6 pb-10"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+        className="flex justify-between items-center"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Curriculum Management</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Curriculum Management</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             {user?.role === 'student' ? 'Your approved curriculum roadmap.' : 'Manage and submit curriculum for admin approval.'}
           </p>
@@ -207,13 +214,12 @@ export default function Curriculum() {
         {isEditable && (
           <button
             onClick={handleAddSubject}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/25 btn-interactive"
           >
-            <PlusCircle className="w-4 h-4" />
-            Add Subject
+            <PlusCircle className="w-4 h-4" /> Add Subject
           </button>
         )}
-      </div>
+      </motion.div>
 
       {/* Subject List */}
       <div className="space-y-6">
@@ -229,7 +235,11 @@ export default function Curriculum() {
           (subjects || []).map((subject, sIdx) => {
             const topics = getTopicsForSubject(subject);
             return (
-              <div key={subject._id} className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden opacity-0 animate-fade-in-up" style={{ animationDelay: `${0.15 + sIdx * 0.1}s` }}>
+              <motion.div
+                key={subject._id}
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: sIdx * 0.1, duration: 0.4 }}
+                className="card-premium overflow-hidden"
+              >
                 {/* Subject Header */}
                 <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
                   <div>
@@ -302,7 +312,7 @@ export default function Curriculum() {
                     </li>
                   )}
                 </ul>
-              </div>
+              </motion.div>
             );
           })
         )}
@@ -440,6 +450,6 @@ export default function Curriculum() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

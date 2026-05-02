@@ -2,22 +2,28 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Clock, TrendingUp, Award, BookOpen, Activity, AlertTriangle, Zap, AlertCircle, ArrowDown, ShieldCheck, RefreshCw } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { motion } from 'framer-motion';
 import api from '../services/api';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
 
-// Removed hardcoded progressData and skillData
 
-const DashboardCard = ({ title, value, icon: Icon, color, delay }) => (
-  <div className={`bg-white dark:bg-slate-800 overflow-hidden shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700 p-6 flex items-center transition-all hover:shadow-lg hover:-translate-y-1 opacity-0 animate-fade-in-up`} style={{ animationDelay: delay }}>
-    <div className={`p-4 rounded-xl ${color} text-white mr-5`}>
+const DashboardCard = ({ title, value, icon: Icon, color, delay = 0 }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    className="card-premium p-6 flex items-center gap-5 shadow-sm cursor-default"
+  >
+    <div className={`p-3.5 rounded-2xl ${color} text-white shadow-lg shrink-0`}>
       <Icon className="h-6 w-6" />
     </div>
-    <div>
-      <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{title}</p>
-      <p className="mt-1 text-3xl font-bold text-slate-800 dark:text-white">{value}</p>
+    <div className="min-w-0">
+      <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest truncate">{title}</p>
+      <p className="mt-0.5 text-3xl font-extrabold text-slate-900 dark:text-white">{value}</p>
     </div>
-  </div>
+  </motion.div>
 );
 
 export default function StudentDashboard() {
@@ -114,63 +120,71 @@ export default function StudentDashboard() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4 px-4 opacity-0 animate-fade-in-up">
-        <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mb-2">
-          <AlertTriangle className="w-8 h-8" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4 px-4"
+      >
+        <div className="w-20 h-20 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mb-2 shadow-lg">
+          <AlertTriangle className="w-10 h-10" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Oops! Something went wrong</h2>
-        <p className="text-slate-500 dark:text-slate-400 max-w-md">{error}</p>
-        <button 
+        <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Something went wrong</h2>
+        <p className="text-slate-500 dark:text-slate-400 max-w-md text-sm leading-relaxed">{error}</p>
+        <button
           onClick={() => window.location.reload()}
-          className="mt-6 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors shadow-sm flex items-center gap-2"
+          className="mt-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/25 flex items-center gap-2 btn-interactive"
         >
           <RefreshCw className="w-4 h-4" /> Try Again
         </button>
-      </div>
+      </motion.div>
     );
   }
 
   if (loading) {
     return (
       <div className="space-y-6 pb-10">
-        {/* Skeleton header */}
-        <div className="h-10 w-64 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
-        <div className="h-4 w-48 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
-        {/* Skeleton cards */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="h-32 bg-slate-200 dark:bg-slate-700 rounded-2xl animate-pulse" />
-          ))}
+        <div className="h-10 w-72 skeleton" />
+        <div className="h-4 w-48 skeleton" />
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {[1,2,3,4].map(i => <div key={i} className="h-28 skeleton" />)}
         </div>
-        <div className="h-48 bg-slate-200 dark:bg-slate-700 rounded-2xl animate-pulse" />
-        <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-2xl animate-pulse" />
+        <div className="h-40 skeleton" />
+        <div className="h-72 skeleton" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 pb-10">
-      <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Welcome back, {userInfo.name ? userInfo.name.split(' ')[0] : 'Student'}! 👋</h1>
-        <div className="mt-2 flex items-center gap-3 flex-wrap">
-          <p className="text-slate-500 dark:text-slate-400">Here is your personalized learning dashboard.</p>
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-8 pb-10"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">
+          Welcome back, <span className="gradient-text">{userInfo.name ? userInfo.name.split(' ')[0] : 'Student'}</span>! 👋
+        </h1>
+        <div className="mt-2 flex items-center gap-2.5 flex-wrap">
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Here is your personalized learning dashboard.</p>
           {userInfo.branch && (
-            <span className="px-3 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 font-bold text-xs rounded-lg border border-indigo-200 dark:border-indigo-800 uppercase shadow-sm flex items-center gap-1">
-              <BookOpen className="w-3 h-3" /> Branch: {userInfo.branch}
+            <span className="px-2.5 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 font-bold text-xs rounded-lg border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+              <BookOpen className="w-3 h-3" /> {userInfo.branch}
             </span>
           )}
           {schedule.streak > 0 && (
-            <span className="px-3 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 font-bold text-xs rounded-lg border border-orange-200 dark:border-orange-700 flex items-center gap-1">
+            <span className="px-2.5 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 font-bold text-xs rounded-lg border border-orange-200 dark:border-orange-700 flex items-center gap-1">
               🔥 {schedule.streak}-day streak
             </span>
           )}
           {schedule.level > 0 && (
-            <span className="px-3 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 font-bold text-xs rounded-lg border border-purple-200 dark:border-purple-700 flex items-center gap-1">
+            <span className="px-2.5 py-1 bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300 font-bold text-xs rounded-lg border border-violet-200 dark:border-violet-700 flex items-center gap-1">
               ⚡ Level {schedule.level}
             </span>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* ── AI Next Recommended Action ── */}
       <div className="opacity-0 animate-fade-in-up bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg" style={{ animationDelay: '0.12s' }}>
@@ -221,7 +235,7 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {/* Performance Summary Card */}
         <div className="lg:col-span-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-sm opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           <div className="flex justify-between items-start">
@@ -512,6 +526,6 @@ export default function StudentDashboard() {
         )}
       </Modal>
 
-    </div>
+    </motion.div>
   );
 }
